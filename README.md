@@ -1,6 +1,4 @@
-# pruba_tecnica_globant
-
-REST API for DB Migration
+# REST API for DB Migration
 
 Description
 
