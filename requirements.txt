@@ -2,4 +2,3 @@ fastapi
 uvicorn
 pandas
 sqlalchemy
-sqlite3
