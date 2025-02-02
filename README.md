@@ -1,6 +1,6 @@
 # REST API for DB Migration
 
-Description
+# Description
 
 This project contains a FastAPI based REST API to do the migration of data from CSV files to a SQL database.
 It allows:
@@ -8,13 +8,13 @@ It allows:
 2. Upload files to the new DB
 3. Insert batch transactions (1 up to 1000 rows) with one request
 
-Installation
+# Installation
 
 Clone the repository:
 
-git clone https://github.com/yourusername/yourrepo.git
+git clone https://github.com/LauraKathe/pruba_tecnica_globant.git
 
-cd yourrepo
+cd pruba_tecnica_globant
 
 Create a virtual environment and install dependencies:
 
@@ -26,14 +26,14 @@ Run the application:
 
 uvicorn main:app --reload
 
-Technologies
+# Technologies
 
 FastAPI: For creating the REST API.
 Pandas: For processing CSV files.
 SQLAlchemy: ORM for database interaction.
 SQLite (default): Can be replaced with PostgreSQL or MySQL.
 
-API Endpoints
+# API Endpoints
 
 - Cargar los archivos CSV
 Endpoint: POST /upload_csv/
