@@ -10,12 +10,6 @@ It allows:
 
 # Installation
 
-Clone the repository:
-
-git clone https://github.com/LauraKathe/pruba_tecnica_globant.git
-
-cd pruba_tecnica_globant
-
 Create a virtual environment and install dependencies:
 
 python -m venv venv
