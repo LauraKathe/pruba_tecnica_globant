@@ -1,81 +1,91 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
+import os
 import pandas as pd
-from sqlalchemy import create_engine, Column, Integer, String, ForeignKey
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
-from typing import List
+from fastapi import FastAPI, HTTPException
+from sqlalchemy import create_engine
+from sqlalchemy.types import Integer, String
 
-# Database setup
-# Configuracion de la base de datos
-# Usamos sqlite para la creacion de esta base de datos
-DATABASE_URL = "sqlite:///./test.db"  
+# Configuración de la base de datos SQLite
+DATABASE_URL = "sqlite:///./test.db"
 engine = create_engine(DATABASE_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
 
-# Se definen 3 tablas
-# En la tabla Employee se crean las ForeignKey para relacionar empleados con trabajos y departamentos
-class Department(Base):
-    __tablename__ = "departments"
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, unique=True, index=True)
-
-class Job(Base):
-    __tablename__ = "jobs"
-    id = Column(Integer, primary_key=True, index=True)
-    title = Column(String, index=True)
-
-class Employee(Base):
-    __tablename__ = "hired_employees"
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, index=True)
-    job_id = Column(Integer, ForeignKey("jobs.id"))
-    department_id = Column(Integer, ForeignKey("departments.id"))
-
-# Creacion de las tablas en la base de datos 
-Base.metadata.create_all(bind=engine)
-
-# Creación de la Aplicación FastAPI
+# FastAPI app
 app = FastAPI()
 
-# Endpoint para subir un archivo CSV
-def insert_data_from_csv(file, table_name, db_session):
-    df = pd.read_csv(file.file, delimiter=',')
-    df.to_sql(table_name, con=engine, if_exists='append', index=False)
+# Ruta donde están los CSV
+DATA_PATH = "data/"
 
-@app.post("/upload_csv/")
-async def upload_csv(table: str, file: UploadFile = File(...)):
-    if table not in ["departments", "jobs", "employees"]:
-        raise HTTPException(status_code=400, detail="Invalid table name")
-    db = SessionLocal()
+def get_dtype(table_name: str) -> dict:
+    """
+    Retorna un diccionario con los tipos de datos para cada columna según la tabla.
+    """
+    if table_name == "departments":
+        # Estructura: id INTEGER, department STRING
+        return {"id": Integer(), "department": String()}
+    elif table_name == "jobs":
+        # Estructura: id INTEGER, job STRING
+        return {"id": Integer(), "job": String()}
+    elif table_name == "hired_employees":
+        # Estructura: id INTEGER, name STRING, datetime STRING, department_id INTEGER, job_id INTEGER
+        return {
+            "id": Integer(),
+            "name": String(),
+            "datetime": String(),
+            "department_id": Integer(),
+            "job_id": Integer()
+        }
+    else:
+        return {}
+
+def load_csv_to_db():
+    """Carga los archivos CSV en la base de datos SQLite en lotes de 1,000 filas.
+    Se definen manualmente los nombres de las columnas (ya que los CSV no tienen headlines)
+    y se especifican los tipos de datos."""
     try:
-        insert_data_from_csv(file, table, db)
-        db.commit()
+        # Verifica si la carpeta data/ existe
+        if not os.path.exists(DATA_PATH):
+            raise FileNotFoundError("La carpeta 'data/' no existe. Crea la carpeta y coloca los archivos CSV dentro.")
+
+        # Cargar departamentos
+        df_departments = pd.read_csv(f"{DATA_PATH}departments.csv", header=None, names=["id", "department"])
+        insert_in_batches(df_departments, "departments")
+
+        # Cargar trabajos
+        df_jobs = pd.read_csv(f"{DATA_PATH}jobs.csv", header=None, names=["id", "job"])
+        insert_in_batches(df_jobs, "jobs")
+
+        # Cargar empleados
+        df_hired_employees = pd.read_csv(f"{DATA_PATH}hired_employees.csv", header=None, names=["id", "name", "datetime", "department_id", "job_id"])
+        insert_in_batches(df_hired_employees, "hired_employees")
+
+        print("✅ Datos cargados correctamente desde los archivos CSV.")
+
     except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        db.close()
-    return {"message": "File processed successfully"}
+        print(f"❌ Error al cargar los archivos CSV: {e}")
 
-# Endpoint para insertar datos en batch
-def insert_batch_data(table_name, data_list, db_session):
-    df = pd.DataFrame(data_list)
-    df.to_sql(table_name, con=engine, if_exists='append', index=False)
-
-@app.post("/insert_batch/")
-async def insert_batch(table: str, data: List[dict]):
-    if len(data) > 1000:
-        raise HTTPException(status_code=400, detail="Batch limit exceeded (max: 1000)")
-    if table not in ["departments", "jobs", "employees"]:
-        raise HTTPException(status_code=400, detail="Invalid table name")
-    db = SessionLocal()
+def insert_in_batches(df, table_name):
+    """Inserta los datos en lotes de 1,000 filas.
+    Se utiliza el parámetro dtype para definir los tipos de datos."""
+    
     try:
-        insert_batch_data(table, data, db)
-        db.commit()
+        dtype_dict = get_dtype(table_name)
+        for i in range(0, len(df), 1000):
+            batch = df.iloc[i:i+1000]
+            batch.to_sql(table_name, engine, if_exists="append", index=False, dtype=dtype_dict)
+        print(f"✅ Datos insertados en la tabla {table_name}.")
     except Exception as e:
-        db.rollback()
+        print(f"❌ Error insertando datos en la tabla {table_name}: {e}")
+
+
+@app.post("/load_data/")
+async def load_data():
+    """Endpoint para cargar datos desde los archivos CSV en la base de datos en lotes de 1,000."""
+    try:
+        load_csv_to_db()
+        return {"message": "Datos cargados exitosamente desde los archivos CSV."}
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        db.close()
-    return {"message": "Batch inserted successfully"}
+
+
+# Ejecutar la carga inicial 
+if __name__ == "__main__":
+    load_csv_to_db()

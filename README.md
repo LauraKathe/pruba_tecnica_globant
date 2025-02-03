@@ -18,7 +18,7 @@ pip install -r requirements.txt
 
 Run the application:
 
-uvicorn main:app --reload
+uvicorn api_-globant:app --reload
 
 # Technologies
 
