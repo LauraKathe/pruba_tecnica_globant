@@ -13,12 +13,12 @@ It allows:
 Create a virtual environment and install dependencies:
 
 python -m venv venv
-source venv/bin/activate  # On Windows use `venv\Scripts\activate`
+venv\Scripts\activate 
 pip install -r requirements.txt
 
 Run the application:
 
-uvicorn api_-globant:app --reload
+uvicorn api_globant:app --reload
 
 # Technologies
 
@@ -30,15 +30,22 @@ SQLite (default): Can be replaced with PostgreSQL or MySQL.
 # API Endpoints
 
 - Cargar los archivos CSV
-Endpoint: POST /upload_csv/
+Endpoint: POST /load_data/
 Parameters:
-1.table (query param) - Name of the target table (departments, jobs, employees).
+1.table (in the function load_csv_to_db) - Name of the tables (departments, jobs, employees).
 2.file (form-data) - CSV file (comma-separated).
+3.data (define in teh function insert_in_batches) - List of up to 1000 entries.
 
-- Batch Insert Data
-Endpoint: POST /insert_batch/
-Parameters:
-1.table (query param) - Name of the target table.
-2.data (JSON body) - List of up to 1000 dictionary entries.
+- KPI number 1
+Endpoint: GET /metrics/quarterly_hires/
+Parameters: 
+No input parameters are required.
+
+
+- KPI number 2
+Endpoint: GET /metrics/departments_above_avg/
+Parameters: 
+No input parameters are required.
+
 
 

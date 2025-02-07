@@ -1,3 +1,4 @@
+#Importo librerias
 import os
 import pandas as pd
 from fastapi import FastAPI, HTTPException
@@ -9,12 +10,13 @@ from sqlalchemy import text
 DATABASE_URL = "sqlite:///./test.db"
 engine = create_engine(DATABASE_URL)
 
-# FastAPI app
+# Defino la app. FastAPI app
 app = FastAPI()
 
 # Ruta donde están los CSV
 DATA_PATH = "data/"
 
+#Esta funcion va a definir la estructura (columnas y tipos de datos) de las tablas que van a quedar en la base de datos
 def get_dtype(table_name: str) -> dict:
     """
     Retorna un diccionario con los tipos de datos para cada columna según la tabla.
@@ -37,6 +39,7 @@ def get_dtype(table_name: str) -> dict:
     else:
         return {}
 
+#Esta funcion va a cargar los archivos desde mi compu en la unibacion local
 def load_csv_to_db():
     """Carga los archivos CSV en la base de datos SQLite en lotes de 1,000 filas.
     Se definen manualmente los nombres de las columnas (ya que los CSV no tienen headlines)
@@ -63,6 +66,7 @@ def load_csv_to_db():
     except Exception as e:
         print(f"❌ Error al cargar los archivos CSV: {e}")
 
+#Esta funcion va a realizar la carga en batch por lotes de 1.000 registros
 def insert_in_batches(df, table_name):
     """Inserta los datos en lotes de 1,000 filas.
     Se utiliza el parámetro dtype para definir los tipos de datos."""
